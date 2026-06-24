@@ -16,13 +16,12 @@ pub fn nuxt_package_json(name: &str) -> String {
   }},
   "dependencies": {{
     "nuxt":            "3.21.8",
-    "nuxt-quasar-ui":  "2.2.2",
+    "nuxt-quasar-ui":  "2.1.13",
     "quasar":          "2.17.4",
     "@quasar/extras":  "1.16.13",
     "vue":             "3.5.13",
-    "vue-router":      "4.5.0",
-    "@vueuse/nuxt":    "12.0.0",
-    "@nuxtjs/i18n":    "9.5.5"
+    "@vueuse/nuxt":    "11.3.0",
+    "@nuxtjs/i18n":    "9.5.6"
   }},
   "devDependencies": {{
     "typescript": "5.7.3",
