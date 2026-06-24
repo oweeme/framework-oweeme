@@ -64,7 +64,7 @@ pub fn ok(msg: &str) {
 
 pub fn done(project: &str, api_url: &str) {
     println!();
-    println!("  {}", "─".repeat(50).bright_black());
+    println!("  {}", "─".repeat(54).bright_black());
     println!();
     println!(
         "  {} {}",
@@ -74,36 +74,16 @@ pub fn done(project: &str, api_url: &str) {
     println!();
     println!("  {}", "Next steps:".bold());
     println!();
-    println!(
-        "  {}  {}",
-        "1.".bright_magenta(),
-        format!("cd {project}").bright_white()
-    );
-    println!(
-        "  {}  {}",
-        "2.".bright_magenta(),
-        "cp .env.example .env".bright_white()
-    );
-    println!(
-        "  {}  {}",
-        "3.".bright_magenta(),
-        format!("# Edit .env → set API_BASE_URL={api_url}").bright_black()
-    );
-    println!(
-        "  {}  {}",
-        "4.".bright_magenta(),
-        "cargo run".bright_white()
-    );
+    println!("  {}  {}", "1.".bright_magenta(), format!("cd {project}").bright_white());
+    println!("  {}  {}", "2.".bright_magenta(), "cp .env.example .env  # edit API URL".bright_white());
+    println!("  {}  {}", "3.".bright_magenta(), "npm install".bright_white());
+    println!("  {}  {}", "4.".bright_magenta(), "npm run dev".bright_white());
     println!();
-    println!(
-        "  {}",
-        "Server will start at http://localhost:3000".bright_black()
-    );
+    println!("  {}", format!("Dev server → http://localhost:3000").bright_black());
     println!();
-    println!(
-        "  {} {}",
-        "Vue.js frontend:".bold(),
-        "cd frontend && npm install && npm run dev".bright_white()
-    );
+    println!("  {}", "Build for production:".bold());
+    println!("  {}  {}", "→".bright_magenta(), "npm run generate  # outputs dist/ — upload anywhere".bright_white());
+    println!();
+    println!("  {}", format!("API backend: {api_url}").bright_black());
     println!();
 }

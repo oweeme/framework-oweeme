@@ -10,18 +10,15 @@ pub struct ProjectConfig {
     pub site_url: String,
     pub api_url: String,
     pub default_lang: String,
-    pub cache_ttl: u64,
-    pub with_vue: bool,
     pub with_pwa: bool,
 }
 
 pub fn run(name: &str) {
     let theme = ColorfulTheme::default();
 
-    println!("  {}", "Let's set up your project".bold());
+    println!("  {}", "Let's set up your Nuxt 3 + Quasar project".bold());
     println!();
 
-    // Preguntas interactivas
     let site_name: String = Input::with_theme(&theme)
         .with_prompt("Site name")
         .default(to_title(name))
@@ -35,12 +32,16 @@ pub fn run(name: &str) {
         .unwrap();
 
     let api_url: String = Input::with_theme(&theme)
-        .with_prompt("API backend URL")
-        .default("http://localhost:8080".into())
+        .with_prompt("API backend URL (REST)")
+        .default("http://localhost:8080/api".into())
         .interact_text()
         .unwrap();
 
-    let langs = &["es — Español", "en — English", "pt — Português", "de — Deutsch", "fr — Français", "ru — Русский", "ko — 한국어", "ja — 日本語"];
+    let langs = &[
+        "es — Español", "en — English", "pt — Português",
+        "de — Deutsch", "fr — Français", "ru — Русский",
+        "ko — 한국어", "ja — 日本語",
+    ];
     let lang_codes = &["es", "en", "pt", "de", "fr", "ru", "ko", "ja"];
     let lang_idx = Select::with_theme(&theme)
         .with_prompt("Default language")
@@ -49,22 +50,6 @@ pub fn run(name: &str) {
         .interact()
         .unwrap();
     let default_lang = lang_codes[lang_idx].to_string();
-
-    let cache_opts = &["60s (aggressive)", "300s (recommended)", "600s (slow APIs)", "0 (disabled)"];
-    let cache_vals = &[60u64, 300, 600, 0];
-    let cache_idx = Select::with_theme(&theme)
-        .with_prompt("API cache TTL")
-        .default(1)
-        .items(cache_opts)
-        .interact()
-        .unwrap();
-    let cache_ttl = cache_vals[cache_idx];
-
-    let with_vue = Confirm::with_theme(&theme)
-        .with_prompt("Include Vue.js frontend?")
-        .default(true)
-        .interact()
-        .unwrap();
 
     let with_pwa = Confirm::with_theme(&theme)
         .with_prompt("Enable PWA (manifest + service worker)?")
@@ -80,8 +65,6 @@ pub fn run(name: &str) {
         site_url,
         api_url: api_url.clone(),
         default_lang,
-        cache_ttl,
-        with_vue,
         with_pwa,
     };
 
@@ -91,9 +74,7 @@ pub fn run(name: &str) {
 
 fn generate_project(cfg: &ProjectConfig) {
     let root = Path::new(&cfg.name);
-    let total = if cfg.with_vue { 7u8 } else { 6u8 };
 
-    // Spinner
     let pb = ProgressBar::new_spinner();
     pb.set_style(
         ProgressStyle::default_spinner()
@@ -103,84 +84,81 @@ fn generate_project(cfg: &ProjectConfig) {
     );
     pb.enable_steady_tick(Duration::from_millis(80));
 
-    // 1. Directorios
     pb.set_message("Creating project structure...");
     for dir in &[
-        "src", "templates/pages", "templates/components",
-        "static/css", "static/js", "static/icons", "locales",
+        "pages/productos/[categoria]",
+        "layouts",
+        "components",
+        "composables",
+        "public",
+        "assets/css",
+        "i18n/locales",
+        "server/api",
     ] {
         fs::create_dir_all(root.join(dir)).unwrap();
     }
     pb.finish_and_clear();
 
-    print::step(1, total, "Project structure");
-    print::ok("directories created");
+    let total = 6u8;
 
-    // 2. Cargo.toml del proyecto
-    print::step(2, total, "Cargo.toml");
-    write(root, "Cargo.toml", &template::cargo_toml(&cfg.name));
-    print::ok("dependencies configured");
+    // 1. Config
+    print::step(1, total, "Nuxt + Quasar config");
+    write(root, "package.json",       &template::nuxt_package_json(&cfg.name));
+    write(root, "nuxt.config.ts",     &template::nuxt_config(cfg));
+    write(root, "tsconfig.json",      template::tsconfig());
+    write(root, ".env.example",       &template::nuxt_env_example(cfg));
+    write(root, ".gitignore",         template::nuxt_gitignore());
+    print::ok("nuxt.config.ts + package.json");
 
-    // 3. Código fuente Rust
-    print::step(3, total, "Rust source");
-    write(root, "src/main.rs", template::main_rs());
-    print::ok("src/main.rs");
+    // 2. App root
+    print::step(2, total, "App shell");
+    write(root, "app.vue",                        template::nuxt_app_vue());
+    write(root, "layouts/default.vue",            &template::nuxt_layout_default(cfg));
+    write(root, "error.vue",                      template::nuxt_error_vue());
+    print::ok("app.vue + layout + error page");
 
-    // 4. Plantillas HTML
-    print::step(4, total, "HTML templates");
-    write(root, "templates/base.html", template::base_html(&cfg.site_name, cfg.with_pwa));
-    write(root, "templates/pages/home.html", template::page_home());
-    write(root, "templates/pages/articulo.html", template::page_articulo());
-    write(root, "templates/pages/musica.html", template::page_musica());
-    write(root, "templates/pages/trabajo.html", template::page_trabajo());
-    write(root, "templates/pages/404.html", template::page_404());
-    write(root, "templates/components/Card.html", template::component_card());
-    write(root, "templates/components/Hero.html", template::component_hero());
-    write(root, "templates/components/Navbar.html", template::component_navbar(&cfg.site_name));
-    write(root, "templates/components/Footer.html", template::component_footer(&cfg.site_name));
-    print::ok("base.html + pages + components");
+    // 3. Pages (rutas automáticas)
+    print::step(3, total, "Pages + routing");
+    write(root, "pages/index.vue",                        &template::page_index(cfg));
+    write(root, "pages/servicios.vue",                    &template::page_servicios(cfg));
+    write(root, "pages/productos/index.vue",              &template::page_productos(cfg));
+    write(root, "pages/productos/[categoria]/index.vue",  template::page_categoria());
+    write(root, "pages/productos/[categoria]/[id].vue",   template::page_producto_item());
+    write(root, "pages/blog/index.vue",                   &template::page_blog(cfg));
+    write(root, "pages/blog/[slug].vue",                  &template::page_blog_post(cfg));
+    write(root, "pages/contacto.vue",                     &template::page_contacto(cfg));
+    print::ok("index / servicios / productos / blog / contacto");
 
-    // 5. Assets estáticos
-    print::step(5, total, "Static assets (CSS + JS)");
-    write(root, "static/css/app.css", template::css_app());
-    write(root, "static/js/app.js", template::js_app());
-    write(root, "static/js/chat.js", template::js_chat());
-    print::ok("CSS design system + JS");
+    // 4. Components
+    print::step(4, total, "Components");
+    write(root, "components/AppHeader.vue",    &template::comp_header(cfg));
+    write(root, "components/AppFooter.vue",    &template::comp_footer(cfg));
+    write(root, "components/ProductCard.vue",  template::comp_product_card());
+    write(root, "components/BlogCard.vue",     template::comp_blog_card());
+    write(root, "components/HeroSection.vue",  &template::comp_hero(cfg));
+    print::ok("Header / Footer / Hero / Cards");
 
-    // 6. Config & locales
-    print::step(6, total, "Config & i18n");
-    write(root, ".env.example", &template::env_example(cfg));
-    write(root, ".gitignore", template::gitignore());
+    // 5. Composables + i18n + CSS
+    print::step(5, total, "Composables + i18n + styles");
+    write(root, "composables/useApi.ts",       &template::composable_use_api(cfg));
+    write(root, "composables/useSeo.ts",       template::composable_use_seo());
+    write(root, "assets/css/main.css",         template::nuxt_css());
     for (code, json) in template::all_locales() {
-        write(root, &format!("locales/{code}.json"), &json);
+        write(root, &format!("i18n/locales/{code}.json"), &json);
     }
-    print::ok(".env + 8 locales (es/en/pt/de/fr/ru/ko/ja)");
+    print::ok("useApi + useSeo + CSS + 8 locales");
 
-    // 7. Frontend Vue (opcional)
-    if cfg.with_vue {
-        print::step(7, total, "Vue.js frontend");
-        fs::create_dir_all(root.join("frontend/src/components")).unwrap();
-        fs::create_dir_all(root.join("frontend/src/composables")).unwrap();
-        fs::create_dir_all(root.join("frontend/src/pages")).unwrap();
-        write(root, "frontend/package.json", &template::vue_package_json(&cfg.name));
-        write(root, "frontend/vite.config.js", template::vue_vite_config());
-        write(root, "frontend/index.html", template::vue_index_html(&cfg.site_name));
-        write(root, "frontend/src/main.js", template::vue_main_js());
-        write(root, "frontend/src/App.vue", template::vue_app());
-        write(root, "frontend/src/composables/useOweeme.js", template::vue_composable_oweeme());
-        write(root, "frontend/src/composables/useChat.js", template::vue_composable_chat());
-        write(root, "frontend/src/components/ChatBox.vue", template::vue_chat_component());
-        write(root, "frontend/src/pages/Home.vue", template::vue_page_home());
-        write(root, "frontend/.gitignore", "node_modules/\ndist/\n");
-        // Logo del framework embebido en el binario
-        let logo_bytes: &[u8] = include_bytes!("../assets/oweelogo.png");
-        let logo_path = root.join("frontend/public/oweelogo.png");
-        fs::create_dir_all(logo_path.parent().unwrap()).unwrap();
-        fs::write(&logo_path, logo_bytes).unwrap_or_else(|e| {
-            eprintln!("{} writing logo: {e}", "error".red());
-        });
-        print::ok("Vue 3 + Vite + Quasar + composables + logo");
+    // 6. Logo
+    print::step(6, total, "Assets");
+    let logo_bytes: &[u8] = include_bytes!("../assets/oweelogo.png");
+    let logo_path = root.join("public/oweelogo.png");
+    fs::write(&logo_path, logo_bytes).unwrap_or_else(|e| {
+        eprintln!("{} writing logo: {e}", "error".red());
+    });
+    if cfg.with_pwa {
+        write(root, "public/manifest.json", &template::pwa_manifest(cfg));
     }
+    print::ok("logo + assets");
 }
 
 fn write(root: &Path, relative: &str, content: impl AsRef<str>) {
