@@ -1,0 +1,37 @@
+{
+  "nav": {
+    "home": "ホーム",
+    "music": "音楽",
+    "articles": "記事",
+    "jobs": "求人"
+  },
+  "home": {
+    "hero_title": "ミュージシャンのためのプラットフォーム",
+    "hero_desc": "音楽を共有し、記事を投稿し、機会を見つけましょう。",
+    "featured": "おすすめ"
+  },
+  "articulo": {
+    "by": "{autor} 著",
+    "published": "{fecha} 公開",
+    "read_more": "続きを読む",
+    "tags": "タグ"
+  },
+  "musica": {
+    "by": "{artista} 演奏",
+    "listen": "聴く",
+    "no_audio": "オーディオは利用できません"
+  },
+  "trabajo": {
+    "apply": "今すぐ応募",
+    "location": "場所",
+    "salary": "給与",
+    "requirements": "要件"
+  },
+  "error": {
+    "not_found": "ページが見つかりません",
+    "server": "内部サーバーエラー"
+  },
+  "footer": {
+    "rights": "全著作権所有"
+  }
+}

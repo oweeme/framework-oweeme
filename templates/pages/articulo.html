@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<meta name="author" content="{{ autor | default(value='Anónimo') }}">
+{% endblock head_extra %}
+
+{% block content %}
+<article class="articulo" itemscope itemtype="https://schema.org/Article">
+  <header class="articulo__header">
+    <h1 itemprop="headline">{{ titulo }}</h1>
+    <div class="articulo__meta">
+      <span itemprop="author">{{ autor | default(value='Anónimo') }}</span>
+      <time itemprop="datePublished" datetime="{{ fecha | default(value='') }}">{{ fecha | default(value='') }}</time>
+    </div>
+    {% if imagen %}
+    <img class="articulo__cover" src="{{ imagen }}" alt="{{ titulo }}" itemprop="image">
+    {% endif %}
+  </header>
+
+  <div class="articulo__cuerpo" itemprop="articleBody">
+    {{ contenido | safe }}
+  </div>
+
+  {% if tags %}
+  <footer class="articulo__tags">
+    {% for tag in tags %}
+    <a href="/tag/{{ tag }}" class="tag">#{{ tag }}</a>
+    {% endfor %}
+  </footer>
+  {% endif %}
+</article>
+{% endblock content %}

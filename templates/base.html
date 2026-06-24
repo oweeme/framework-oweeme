@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- SEO primario -->
+  <title>{{ seo_title }}</title>
+  <meta name="description" content="{{ seo_description }}">
+  {% if seo_keywords %}<meta name="keywords" content="{{ seo_keywords }}">{% endif %}
+  {% if seo_canonical %}<link rel="canonical" href="{{ seo_canonical }}">{% endif %}
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{{ seo_og_title | default(value=seo_title) }}">
+  <meta property="og:description" content="{{ seo_og_description | default(value=seo_description) }}">
+  <meta property="og:type" content="{{ seo_og_type | default(value='website') }}">
+  {% if seo_og_image %}<meta property="og:image" content="{{ seo_og_image }}">{% endif %}
+  {% if seo_canonical %}<meta property="og:url" content="{{ seo_canonical }}">{% endif %}
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="{{ seo_twitter_card | default(value='summary_large_image') }}">
+  <meta name="twitter:title" content="{{ seo_twitter_title | default(value=seo_title) }}">
+  <meta name="twitter:description" content="{{ seo_twitter_description | default(value=seo_description) }}">
+  {% if seo_twitter_image %}<meta name="twitter:image" content="{{ seo_twitter_image }}">{% endif %}
+
+  <!-- Schema.org JSON-LD -->
+  {% if seo_schema_json %}
+  <script type="application/ld+json">{{ seo_schema_json | safe }}</script>
+  {% endif %}
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#6c63ff">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="/static/css/app.css">
+
+  {% block head_extra %}{% endblock head_extra %}
+</head>
+<body>
+  {% block header %}
+  <header class="site-header">
+    <nav>
+      <a href="/" class="logo">Mi Plataforma</a>
+      <ul>
+        <li><a href="/">Inicio</a></li>
+        <li><a href="/musica">Música</a></li>
+        <li><a href="/articulos">Artículos</a></li>
+        <li><a href="/trabajos">Trabajos</a></li>
+      </ul>
+    </nav>
+  </header>
+  {% endblock header %}
+
+  <main>
+    {% block content %}{% endblock content %}
+  </main>
+
+  {% block footer %}
+  <footer>
+    <p>&copy; 2025 Mi Plataforma. Todos los derechos reservados.</p>
+  </footer>
+  {% endblock footer %}
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+  <script src="/static/js/app.js" defer></script>
+  {% block scripts %}{% endblock scripts %}
+</body>
+</html>

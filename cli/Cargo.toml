@@ -1,0 +1,17 @@
+[package]
+name = "oweeme"
+version = "1.0.0"
+edition = "2021"
+description = "CLI for Framework Oweeme — scaffold SEO-first Rust + Vue.js projects"
+authors = ["Héctor"]
+
+[[bin]]
+name = "oweeme"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive", "color"] }
+dialoguer = "0.11"
+indicatif = "0.17"
+colored = "2"
+anyhow = "1"

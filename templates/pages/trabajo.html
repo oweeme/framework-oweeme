@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="trabajo" itemscope itemtype="https://schema.org/JobPosting">
+  <header class="trabajo__header">
+    <h1 itemprop="title">{{ titulo }}</h1>
+    <div class="trabajo__meta">
+      <span itemprop="hiringOrganization" itemscope itemtype="https://schema.org/Organization">
+        <strong itemprop="name">{{ empresa | default(value='Empresa') }}</strong>
+      </span>
+      <span itemprop="jobLocation" itemscope itemtype="https://schema.org/Place">
+        <span itemprop="name">{{ ubicacion | default(value='Remoto') }}</span>
+      </span>
+      {% if salario %}
+      <span class="trabajo__salario">{{ salario }}</span>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="trabajo__descripcion" itemprop="description">
+    {{ descripcion | safe }}
+  </div>
+
+  {% if requisitos %}
+  <section class="trabajo__requisitos">
+    <h2>Requisitos</h2>
+    <ul>
+      {% for req in requisitos %}
+      <li>{{ req }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if url_aplicar %}
+  <a href="{{ url_aplicar }}" class="btn btn--primary" itemprop="url">Aplicar ahora</a>
+  {% endif %}
+</article>
+{% endblock content %}

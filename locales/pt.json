@@ -1,0 +1,37 @@
+{
+  "nav": {
+    "home": "Início",
+    "music": "Música",
+    "articles": "Artigos",
+    "jobs": "Empregos"
+  },
+  "home": {
+    "hero_title": "A plataforma para músicos",
+    "hero_desc": "Compartilhe sua música, publique artigos e encontre oportunidades.",
+    "featured": "Destaques"
+  },
+  "articulo": {
+    "by": "Por {autor}",
+    "published": "Publicado em {fecha}",
+    "read_more": "Ler mais",
+    "tags": "Etiquetas"
+  },
+  "musica": {
+    "by": "por {artista}",
+    "listen": "Ouvir",
+    "no_audio": "Áudio não disponível"
+  },
+  "trabajo": {
+    "apply": "Candidatar-se",
+    "location": "Localização",
+    "salary": "Salário",
+    "requirements": "Requisitos"
+  },
+  "error": {
+    "not_found": "Página não encontrada",
+    "server": "Erro interno do servidor"
+  },
+  "footer": {
+    "rights": "Todos os direitos reservados"
+  }
+}

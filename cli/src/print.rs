@@ -1,0 +1,101 @@
+use colored::Colorize;
+
+pub fn banner() {
+    println!();
+    println!("{}", "  ██████╗ ██╗    ██╗███████╗███████╗███╗   ███╗███████╗".bright_magenta());
+    println!("{}", "  ██╔═══██╗██║    ██║██╔════╝██╔════╝████╗ ████║██╔════╝".bright_magenta());
+    println!("{}", "  ██║   ██║██║ █╗ ██║█████╗  █████╗  ██╔████╔██║█████╗  ".bright_magenta());
+    println!("{}", "  ██║   ██║██║███╗██║██╔══╝  ██╔══╝  ██║╚██╔╝██║██╔══╝  ".magenta());
+    println!("{}", "  ╚██████╔╝╚███╔███╔╝███████╗███████╗██║ ╚═╝ ██║███████╗".magenta());
+    println!("{}", "   ╚═════╝  ╚══╝╚══╝ ╚══════╝╚══════╝╚═╝     ╚═╝╚══════╝".magenta());
+    println!();
+    println!(
+        "  {} {}  {}",
+        "SEO-first Rust + Vue.js Framework".bold(),
+        "•".bright_black(),
+        "v1.0.0".bright_black()
+    );
+    println!();
+}
+
+pub fn info() {
+    println!("{}", "Commands".bold().underline());
+    println!();
+    cmd("oweeme new <name>", "Scaffold a new project");
+    println!();
+    println!("{}", "After creating a project:".bright_black());
+    println!();
+    cmd("cd <name>", "Enter the project directory");
+    cmd("cp .env.example .env", "Set up environment");
+    cmd("cargo run", "Start the dev server");
+    println!();
+    println!("{}", "Docs & source:".bright_black());
+    println!("  {}", "https://github.com/tu-usuario/framework-oweeme".cyan());
+    println!();
+}
+
+fn cmd(command: &str, desc: &str) {
+    println!(
+        "  {}  {}",
+        format!("  {command}  ").on_bright_black().white().bold(),
+        desc.bright_black()
+    );
+}
+
+pub fn step(n: u8, total: u8, msg: &str) {
+    println!(
+        "  {} {}",
+        format!("[{n}/{total}]").bright_magenta().bold(),
+        msg.bold()
+    );
+}
+
+pub fn ok(msg: &str) {
+    println!("  {}  {}", "✓".bright_green().bold(), msg);
+}
+
+pub fn done(project: &str, api_url: &str) {
+    println!();
+    println!("  {}", "─".repeat(50).bright_black());
+    println!();
+    println!(
+        "  {} {}",
+        "Project ready:".bold(),
+        project.bright_magenta().bold()
+    );
+    println!();
+    println!("  {}", "Next steps:".bold());
+    println!();
+    println!(
+        "  {}  {}",
+        "1.".bright_magenta(),
+        format!("cd {project}").bright_white()
+    );
+    println!(
+        "  {}  {}",
+        "2.".bright_magenta(),
+        "cp .env.example .env".bright_white()
+    );
+    println!(
+        "  {}  {}",
+        "3.".bright_magenta(),
+        format!("# Edit .env → set API_BASE_URL={api_url}").bright_black()
+    );
+    println!(
+        "  {}  {}",
+        "4.".bright_magenta(),
+        "cargo run".bright_white()
+    );
+    println!();
+    println!(
+        "  {}",
+        "Server will start at http://localhost:3000".bright_black()
+    );
+    println!();
+    println!(
+        "  {} {}",
+        "Vue.js frontend:".bold(),
+        "cd frontend && npm install && npm run dev".bright_white()
+    );
+    println!();
+}

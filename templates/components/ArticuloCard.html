@@ -1,0 +1,15 @@
+<article class="card">
+  {% if item.imagen %}
+  <img class="card__img" src="{{ item.imagen }}" alt="{{ item.titulo }}" loading="lazy">
+  {% endif %}
+  <div class="card__body">
+    <h3 class="card__title">
+      <a href="/articulo/{{ item.slug }}">{{ item.titulo }}</a>
+    </h3>
+    <p class="card__desc">{{ item.descripcion }}</p>
+    <div class="card__meta">
+      <span>{{ item.autor | default(value='Anónimo') }}</span>
+      <time>{{ item.fecha | default(value='') }}</time>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,7 @@
+target/
+dist/
+.env
+*.pem
+wasm/pkg/
+static/wasm/
+docs/plan.md

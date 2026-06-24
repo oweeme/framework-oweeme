@@ -1,0 +1,42 @@
+[package]
+name = "framework_oweeme"
+version = "0.1.0"
+edition = "2021"
+description = "SEO-first Rust web framework with Vue-like components and API connector"
+authors = ["Héctor"]
+
+[lib]
+name = "framework_oweeme"
+path = "src/lib.rs"
+
+[[bin]]
+name = "framework_oweeme"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.7", features = ["macros", "ws"] }
+tokio = { version = "1", features = ["full"] }
+tera = "1"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tower = { version = "0.4", features = ["full"] }
+tower-http = { version = "0.5", features = ["fs", "compression-gzip"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+regex = "1"
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+once_cell = "1"
+dashmap = "6"
+axum-extra = { version = "0.9", features = ["cookie", "typed-header"] }
+tokio-tungstenite = "0.24"
+futures-util = { version = "0.3", features = ["sink"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[workspace]
+members = [".", "cli"]
+exclude = ["wasm"]

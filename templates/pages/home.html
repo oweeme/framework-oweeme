@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <h1>Bienvenido a la plataforma</h1>
+  <p>{{ seo_description }}</p>
+</section>
+
+{% if api_data and api_data.destacados %}
+<section class="destacados">
+  <h2>Artículos destacados</h2>
+  {% for item in api_data.destacados %}
+    {% include "components/ArticuloCard.html" %}
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock content %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="musica" itemscope itemtype="https://schema.org/MusicRecording">
+  <header class="musica__header">
+    {% if cover %}
+    <img class="musica__cover" src="{{ cover }}" alt="{{ nombre }}" itemprop="image">
+    {% endif %}
+    <h1 itemprop="name">{{ nombre }}</h1>
+    <p itemprop="byArtist" itemscope itemtype="https://schema.org/MusicGroup">
+      por <strong itemprop="name">{{ artista }}</strong>
+    </p>
+  </header>
+
+  {% if descripcion %}
+  <p class="musica__descripcion" itemprop="description">{{ descripcion }}</p>
+  {% endif %}
+
+  {% if audio_url %}
+  <audio controls class="musica__player" itemprop="audio">
+    <source src="{{ audio_url }}" type="audio/mpeg">
+    Tu navegador no soporta audio HTML5.
+  </audio>
+  {% endif %}
+</article>
+{% endblock content %}
