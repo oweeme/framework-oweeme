@@ -367,20 +367,20 @@ pub fn css_app() -> &'static str {
 
 /* ─── Tokens ──────────────────────────────────────────────── */
 :root {
-  --primary:       #6c63ff;
-  --primary-dark:  #5548e0;
-  --primary-light: #8b85ff;
-  --secondary:     #ff6584;
-  --accent:        #43e97b;
-  --bg:            #0d0d1a;
-  --bg-card:       #13132a;
-  --bg-nav:        rgba(13,13,26,0.95);
-  --surface:       #1a1a35;
-  --surface-2:     #22224a;
-  --border:        rgba(108,99,255,0.15);
-  --text:          #e8e8f5;
-  --text-muted:    #7a7a9d;
-  --text-soft:     #aaaac5;
+  --primary:       #e8553a;
+  --primary-dark:  #c93f26;
+  --primary-light: #ff7a5c;
+  --secondary:     #1a5c47;
+  --accent:        #f5e2a0;
+  --bg:            #0d3d2e;
+  --bg-card:       #112e22;
+  --bg-nav:        rgba(13,61,46,0.97);
+  --surface:       #1a5c47;
+  --surface-2:     #1f6e55;
+  --border:        rgba(232,85,58,0.18);
+  --text:          #f0ede6;
+  --text-muted:    #5a9e80;
+  --text-soft:     #a8d5c2;
   --radius-sm:     6px;
   --radius:        12px;
   --radius-lg:     20px;
@@ -975,11 +975,11 @@ pub fn vue_package_json(name: &str) -> String {
   }},
   "dependencies": {{
     "vue": "^3.4.0",
-    "vue-router": "^4.3.0",
-    "pinia": "^2.1.0",
+    "vue-router": "4.3.0",
+    "pinia": "2.1.0",
     "quasar": "^2.16.0",
     "@quasar/extras": "^1.16.0",
-    "axios": "^1.7.0"
+    "axios": "1.7.9"
   }},
   "devDependencies": {{
     "@vitejs/plugin-vue": "^5.0.0",
@@ -1000,8 +1000,13 @@ import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 export default defineConfig({
   plugins: [
     vue({ template: { transformAssetUrls } }),
-    quasar({ sassVariables: false }),
+    quasar({
+      autoImportComponentCase: 'pascal',
+    }),
   ],
+  resolve: {
+    alias: { '@': '/src' }
+  },
   build: {
     outDir: '../static/js',
     rollupOptions: {
@@ -1009,7 +1014,12 @@ export default defineConfig({
       output: { entryFileNames: 'vue-app.js', chunkFileNames: '[name].js' }
     }
   },
-  server: { proxy: { '/api': 'http://localhost:3000', '/ws': { target: 'ws://localhost:3000', ws: true } } }
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/ws': { target: 'ws://localhost:3000', ws: true }
+    }
+  }
 })
 "#
 }
@@ -1038,7 +1048,7 @@ import { Quasar } from 'quasar'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia } from 'pinia'
 import '@quasar/extras/material-icons/material-icons.css'
-import 'quasar/src/css/index.sass'
+import 'quasar/dist/quasar.css'
 import App from './App.vue'
 
 const router = createRouter({
@@ -1052,7 +1062,16 @@ const app = createApp(App)
 app.use(Quasar, {
   config: {
     dark: true,
-    brand: { primary: '#6c63ff', secondary: '#ff6584', accent: '#43e97b' }
+    brand: {
+      primary:   '#e8553a',
+      secondary: '#1a5c47',
+      accent:    '#f5e2a0',
+      dark:      '#0d3d2e',
+      positive:  '#43b89c',
+      negative:  '#c93f26',
+      info:      '#a8d5c2',
+      warning:   '#f5c842'
+    }
   }
 })
 app.use(router)
@@ -1062,7 +1081,7 @@ app.mount('#app')
 }
 
 pub fn vue_app() -> &'static str {
-    r#"<script setup>
+    r##"<script setup>
 import { ref } from 'vue'
 
 const count = ref(0)
@@ -1070,16 +1089,37 @@ const count = ref(0)
 
 <template>
   <q-layout view="hHh lpR fFf">
+    <q-header elevated style="background:#1a5c47;">
+      <q-toolbar>
+        <img src="/oweelogo.png" alt="Oweeme" style="height:36px;border-radius:50%;margin-right:12px;" />
+        <q-toolbar-title style="font-weight:700;letter-spacing:1px;">Oweeme</q-toolbar-title>
+      </q-toolbar>
+    </q-header>
+
     <q-page-container>
-      <q-page class="flex flex-center column q-gutter-md">
-        <h1 class="text-h4 text-primary">Oweeme Framework</h1>
-        <p class="text-subtitle1">Vue 3 + Quasar + Rust SSR</p>
-        <q-btn color="primary" label="Clicks: {{ count }}" @click="count++" />
+      <q-page class="flex flex-center column q-gutter-lg" style="background:#0d3d2e;min-height:100vh;">
+        <img src="/oweelogo.png" alt="Oweeme Logo"
+             style="width:140px;border-radius:50%;box-shadow:0 0 40px #e8553a55;" />
+        <h1 style="color:#f5e2a0;font-size:2.4rem;font-weight:700;margin:0;text-align:center;">
+          Oweeme Framework
+        </h1>
+        <p style="color:#a8d5c2;font-size:1.1rem;margin:0;text-align:center;">
+          Vue 3 + Quasar + Rust SSR — SEO First
+        </p>
+        <q-btn
+          :label="'Clicks: ' + count"
+          @click="count++"
+          unelevated size="lg"
+          style="background:#e8553a;color:#fff;border-radius:8px;padding:12px 32px;font-weight:700;"
+        />
+        <p style="color:#5a9e80;font-size:0.85rem;margin:0;">
+          Hydration activa — el backend es Rust/Axum
+        </p>
       </q-page>
     </q-page-container>
   </q-layout>
 </template>
-"#
+"##
 }
 
 pub fn vue_composable_oweeme() -> &'static str {

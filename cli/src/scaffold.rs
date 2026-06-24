@@ -172,7 +172,14 @@ fn generate_project(cfg: &ProjectConfig) {
         write(root, "frontend/src/components/ChatBox.vue", template::vue_chat_component());
         write(root, "frontend/src/pages/Home.vue", template::vue_page_home());
         write(root, "frontend/.gitignore", "node_modules/\ndist/\n");
-        print::ok("Vue 3 + Vite + Quasar + composables");
+        // Logo del framework embebido en el binario
+        let logo_bytes: &[u8] = include_bytes!("../assets/oweelogo.png");
+        let logo_path = root.join("frontend/public/oweelogo.png");
+        fs::create_dir_all(logo_path.parent().unwrap()).unwrap();
+        fs::write(&logo_path, logo_bytes).unwrap_or_else(|e| {
+            eprintln!("{} writing logo: {e}", "error".red());
+        });
+        print::ok("Vue 3 + Vite + Quasar + composables + logo");
     }
 }
 
