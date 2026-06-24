@@ -92,7 +92,7 @@ fn generate_project(cfg: &ProjectConfig) {
         "composables",
         "public",
         "assets/css",
-        "i18n/locales",
+        "locales",
         "server/api",
     ] {
         fs::create_dir_all(root.join(dir)).unwrap();
@@ -144,7 +144,7 @@ fn generate_project(cfg: &ProjectConfig) {
     write(root, "composables/useSeo.ts",       template::composable_use_seo());
     write(root, "assets/css/main.css",         template::nuxt_css());
     for (code, json) in template::all_locales() {
-        write(root, &format!("i18n/locales/{code}.json"), &json);
+        write(root, &format!("locales/{code}.json"), &json);
     }
     print::ok("useApi + useSeo + CSS + 8 locales");
 

@@ -12,23 +12,21 @@ pub fn nuxt_package_json(name: &str) -> String {
     "dev":      "nuxt dev",
     "build":    "nuxt build",
     "generate": "nuxt generate",
-    "preview":  "nuxt preview",
-    "lint":     "eslint ."
+    "preview":  "nuxt preview"
   }},
   "dependencies": {{
-    "nuxt":            "^3.13.0",
-    "nuxt-quasar-ui":  "^2.1.9",
-    "quasar":          "^2.16.0",
-    "@quasar/extras":  "^1.16.0",
-    "vue":             "^3.5.0",
-    "vue-router":      "^4.4.0",
-    "@vueuse/nuxt":    "^11.0.0",
-    "@nuxtjs/i18n":    "^8.5.0",
-    "axios":           "1.7.9"
+    "nuxt":            "3.21.8",
+    "nuxt-quasar-ui":  "2.2.2",
+    "quasar":          "2.17.4",
+    "@quasar/extras":  "1.16.13",
+    "vue":             "3.5.13",
+    "vue-router":      "4.5.0",
+    "@vueuse/nuxt":    "12.0.0",
+    "@nuxtjs/i18n":    "9.5.5"
   }},
   "devDependencies": {{
-    "typescript":      "^5.5.0",
-    "vue-tsc":         "^2.1.0"
+    "typescript": "5.7.3",
+    "vue-tsc":    "2.2.8"
   }}
 }}
 "#
@@ -38,8 +36,8 @@ pub fn nuxt_package_json(name: &str) -> String {
 // ─── nuxt.config.ts ───────────────────────────────────────────────────────────
 
 pub fn nuxt_config(cfg: &ProjectConfig) -> String {
-    let pwa_head = if cfg.with_pwa {
-        r#"{ rel: 'manifest', href: '/manifest.json' },"#
+    let pwa_line = if cfg.with_pwa {
+        "        { rel: 'manifest', href: '/manifest.json' },"
     } else {
         ""
     };
@@ -48,12 +46,13 @@ pub fn nuxt_config(cfg: &ProjectConfig) -> String {
 export default defineNuxtConfig({{
   devtools: {{ enabled: true }},
 
-  // SSG — genera dist/ estático para cualquier hosting
+  // SSG: genera dist/ puro — sin servidor Rust en producción
   ssr: true,
   nitro: {{
     preset: 'static',
     prerender: {{
       crawlLinks: true,
+      failOnError: false,
       routes: ['/', '/servicios', '/productos', '/blog', '/contacto'],
     }},
   }},
@@ -88,26 +87,32 @@ export default defineNuxtConfig({{
 
   i18n: {{
     locales: [
-      {{ code: 'es', file: 'es.json', name: 'Español' }},
-      {{ code: 'en', file: 'en.json', name: 'English' }},
-      {{ code: 'pt', file: 'pt.json', name: 'Português' }},
-      {{ code: 'de', file: 'de.json', name: 'Deutsch' }},
-      {{ code: 'fr', file: 'fr.json', name: 'Français' }},
-      {{ code: 'ru', file: 'ru.json', name: 'Русский' }},
-      {{ code: 'ko', file: 'ko.json', name: '한국어' }},
-      {{ code: 'ja', file: 'ja.json', name: '日本語' }},
+      {{ code: 'es', language: 'es-ES', file: 'es.json', name: 'Español' }},
+      {{ code: 'en', language: 'en-US', file: 'en.json', name: 'English' }},
+      {{ code: 'pt', language: 'pt-BR', file: 'pt.json', name: 'Português' }},
+      {{ code: 'de', language: 'de-DE', file: 'de.json', name: 'Deutsch' }},
+      {{ code: 'fr', language: 'fr-FR', file: 'fr.json', name: 'Français' }},
+      {{ code: 'ru', language: 'ru-RU', file: 'ru.json', name: 'Русский' }},
+      {{ code: 'ko', language: 'ko-KR', file: 'ko.json', name: '한국어' }},
+      {{ code: 'ja', language: 'ja-JP', file: 'ja.json', name: '日本語' }},
     ],
     lazy: true,
-    langDir: 'i18n/locales',
+    langDir: 'locales',
     defaultLocale: '{lang}',
     strategy: 'prefix_except_default',
+    bundle: {{ optimizeTranslationDirective: false }},
+    detectBrowserLanguage: {{
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root',
+    }},
   }},
 
   runtimeConfig: {{
     public: {{
       apiBase:  process.env.NUXT_PUBLIC_API_BASE  || '{api}',
       siteUrl:  process.env.NUXT_PUBLIC_SITE_URL  || '{url}',
-      siteName: process.env.NUXT_PUBLIC_SITE_NAME || '{name}',
+      siteName: process.env.NUXT_PUBLIC_SITE_NAME || '{site}',
     }},
   }},
 
@@ -116,7 +121,7 @@ export default defineNuxtConfig({{
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
       link: [
-        {pwa_head}
+{pwa_line}
         {{ rel: 'icon', type: 'image/png', href: '/oweelogo.png' }},
       ],
     }},
@@ -130,7 +135,7 @@ export default defineNuxtConfig({{
         lang = cfg.default_lang,
         api  = cfg.api_url,
         url  = cfg.site_url,
-        name = cfg.site_name,
+        site = cfg.site_name,
     )
 }
 
@@ -147,10 +152,7 @@ pub fn tsconfig() -> &'static str {
 
 pub fn nuxt_env_example(cfg: &ProjectConfig) -> String {
     format!(
-        r#"NUXT_PUBLIC_API_BASE={}
-NUXT_PUBLIC_SITE_URL={}
-NUXT_PUBLIC_SITE_NAME={}
-"#,
+        "NUXT_PUBLIC_API_BASE={}\nNUXT_PUBLIC_SITE_URL={}\nNUXT_PUBLIC_SITE_NAME={}\n",
         cfg.api_url, cfg.site_url, cfg.site_name
     )
 }
@@ -158,37 +160,19 @@ NUXT_PUBLIC_SITE_NAME={}
 // ─── .gitignore ───────────────────────────────────────────────────────────────
 
 pub fn nuxt_gitignore() -> &'static str {
-    r#"node_modules/
-.nuxt/
-.output/
-dist/
-.env
-*.local
-.DS_Store
-"#
+    "node_modules/\n.nuxt/\n.output/\ndist/\n.env\n*.local\n.DS_Store\n"
 }
 
 // ─── app.vue ──────────────────────────────────────────────────────────────────
 
 pub fn nuxt_app_vue() -> &'static str {
-    r#"<template>
-  <NuxtLayout>
-    <NuxtPage />
-  </NuxtLayout>
-</template>
-"#
+    "<template>\n  <NuxtLayout>\n    <NuxtPage />\n  </NuxtLayout>\n</template>\n"
 }
 
 // ─── layouts/default.vue ──────────────────────────────────────────────────────
 
-pub fn nuxt_layout_default(cfg: &ProjectConfig) -> String {
-    format!(
-        r#"<script setup lang="ts">
-const config = useRuntimeConfig()
-const siteName = config.public.siteName
-</script>
-
-<template>
+pub fn nuxt_layout_default(_cfg: &ProjectConfig) -> &'static str {
+    r#"<template>
   <q-layout view="hHh lpR fFf">
     <AppHeader />
     <q-page-container>
@@ -198,7 +182,6 @@ const siteName = config.public.siteName
   </q-layout>
 </template>
 "#
-    )
 }
 
 // ─── error.vue ────────────────────────────────────────────────────────────────
@@ -218,7 +201,7 @@ useSeoMeta({
     <AppHeader />
     <q-page-container>
       <q-page class="flex flex-center column q-gutter-md oweeme-page">
-        <h1 class="text-h1 text-primary" style="font-size:6rem;margin:0;">
+        <h1 class="text-primary" style="font-size:6rem;margin:0;font-weight:800;">
           {{ error.statusCode }}
         </h1>
         <p class="text-h5 text-cream">
@@ -238,11 +221,9 @@ useSeoMeta({
 pub fn page_index(cfg: &ProjectConfig) -> String {
     format!(
         r#"<script setup lang="ts">
-const config = useRuntimeConfig()
-
 useSeoMeta({{
   title: '{name}',
-  description: 'Bienvenido a {name} — {url}',
+  description: 'Bienvenido a {name}',
   ogTitle: '{name}',
   ogDescription: 'Bienvenido a {name}',
   ogImage: '/oweelogo.png',
@@ -254,7 +235,6 @@ useSeoMeta({{
 <template>
   <q-page class="oweeme-page">
     <HeroSection />
-
     <section class="q-pa-xl">
       <div class="row q-col-gutter-lg justify-center">
         <div class="col-12 col-md-4">
@@ -306,12 +286,12 @@ useSeoMeta({{
 pub fn page_servicios(cfg: &ProjectConfig) -> String {
     format!(
         r#"<script setup lang="ts">
-const {{ data: servicios, pending }} = await useApi('/servicios')
+const {{ data: servicios, pending }} = await useApi<any[]>('/servicios')
 
 useSeoMeta({{
-  title: `Servicios | {name}`,
+  title: 'Servicios | {name}',
   description: 'Conoce todos nuestros servicios profesionales.',
-  ogTitle: `Servicios | {name}`,
+  ogTitle: 'Servicios | {name}',
   ogUrl: '{url}/servicios',
 }})
 </script>
@@ -319,27 +299,21 @@ useSeoMeta({{
 <template>
   <q-page class="oweeme-page q-pa-xl">
     <h1 class="text-h4 text-cream q-mb-lg">Nuestros Servicios</h1>
-
     <q-inner-loading :showing="pending" color="primary" />
-
     <div v-if="!pending" class="row q-col-gutter-lg">
-      <div
-        v-for="s in servicios"
-        :key="s.id"
-        class="col-12 col-md-6 col-lg-4"
-      >
+      <div v-for="s in servicios" :key="s.id" class="col-12 col-md-6 col-lg-4">
         <q-card class="oweeme-card full-height">
           <q-card-section>
             <q-icon :name="s.icono || 'star'" color="primary" size="2rem" />
-            <h2 class="text-h6 text-cream q-mt-sm">{{{{ s.titulo }}}}</h2>
-            <p class="text-muted">{{{{ s.descripcion }}}}</p>
+            <h2 class="text-h6 text-cream q-mt-sm">{{ s.titulo }}</h2>
+            <p class="text-muted">{{ s.descripcion }}</p>
           </q-card-section>
         </q-card>
       </div>
-
-      <div v-if="!servicios?.length" class="col-12 text-center text-muted">
-        <p>Conecta tu API en <code>.env</code> para ver los servicios.</p>
-        <q-btn outline color="primary" to="/contacto" label="Contactar" class="q-mt-md" />
+      <div v-if="!servicios?.length" class="col-12 text-center q-gutter-md">
+        <q-icon name="build" size="4rem" color="secondary" />
+        <p class="text-muted q-mt-md">Conecta tu API en <code>.env</code> para ver los servicios.</p>
+        <q-btn outline color="primary" to="/contacto" label="Contactar" />
       </div>
     </div>
   </q-page>
@@ -353,12 +327,12 @@ useSeoMeta({{
 pub fn page_productos(cfg: &ProjectConfig) -> String {
     format!(
         r#"<script setup lang="ts">
-const {{ data: categorias, pending }} = await useApi('/productos/categorias')
+const {{ data: categorias, pending }} = await useApi<any[]>('/productos/categorias')
 
 useSeoMeta({{
-  title: `Productos | {name}`,
+  title: 'Productos | {name}',
   description: 'Explora nuestro catálogo de productos por categoría.',
-  ogTitle: `Productos | {name}`,
+  ogTitle: 'Productos | {name}',
   ogUrl: '{url}/productos',
 }})
 </script>
@@ -366,34 +340,22 @@ useSeoMeta({{
 <template>
   <q-page class="oweeme-page q-pa-xl">
     <h1 class="text-h4 text-cream q-mb-lg">Catálogo de Productos</h1>
-
     <q-inner-loading :showing="pending" color="primary" />
-
     <div v-if="!pending" class="row q-col-gutter-lg">
-      <div
-        v-for="cat in categorias"
-        :key="cat.slug"
-        class="col-12 col-sm-6 col-md-4"
-      >
-        <NuxtLink :to="`/productos/${{cat.slug}}`" class="no-decoration">
+      <div v-for="cat in categorias" :key="cat.slug" class="col-12 col-sm-6 col-md-4">
+        <NuxtLink :to="'/productos/' + cat.slug" class="no-decoration">
           <q-card class="oweeme-card cursor-pointer oweeme-card--hover">
-            <q-img
-              v-if="cat.imagen"
-              :src="cat.imagen"
-              :alt="cat.nombre"
-              height="160px"
-            />
+            <q-img v-if="cat.imagen" :src="cat.imagen" :alt="cat.nombre" height="160px" />
             <q-card-section>
-              <h2 class="text-h6 text-cream">{{{{ cat.nombre }}}}</h2>
-              <p class="text-muted text-caption">{{{{ cat.total }}}} productos</p>
+              <h2 class="text-h6 text-cream">{{ cat.nombre }}</h2>
+              <p class="text-muted text-caption">{{ cat.total }} productos</p>
             </q-card-section>
           </q-card>
         </NuxtLink>
       </div>
-
-      <div v-if="!categorias?.length" class="col-12 text-center text-muted">
+      <div v-if="!categorias?.length" class="col-12 text-center">
         <q-icon name="inventory_2" size="4rem" color="secondary" />
-        <p class="q-mt-md">Conecta tu API para mostrar productos.</p>
+        <p class="text-muted q-mt-md">Conecta tu API para mostrar productos.</p>
       </div>
     </div>
   </q-page>
@@ -407,13 +369,12 @@ useSeoMeta({{
 pub fn page_categoria() -> &'static str {
     r#"<script setup lang="ts">
 const route = useRoute()
-const categoria = route.params.categoria as string
-const { data: productos, pending } = await useApi(`/productos/${categoria}`)
+const categoria = computed(() => route.params.categoria as string)
+const { data: productos, pending } = await useApi<any[]>(() => `/productos/${categoria.value}`)
 
 useSeoMeta({
-  title: () => `${categoria} | Productos`,
-  description: () => `Productos de la categoría ${categoria}`,
-  ogUrl: () => `/productos/${categoria}`,
+  title: () => `${categoria.value} | Productos`,
+  description: () => `Productos de la categoría ${categoria.value}`,
 })
 </script>
 
@@ -425,16 +386,14 @@ useSeoMeta({
         {{ categoria }}
       </h1>
     </div>
-
     <q-inner-loading :showing="pending" color="primary" />
-
     <div v-if="!pending" class="row q-col-gutter-lg">
-      <div
-        v-for="p in productos"
-        :key="p.id"
-        class="col-12 col-sm-6 col-md-4 col-lg-3"
-      >
+      <div v-for="p in productos" :key="p.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
         <ProductCard :product="p" :categoria="categoria" />
+      </div>
+      <div v-if="!productos?.length" class="col-12 text-center">
+        <q-icon name="search_off" size="4rem" color="secondary" />
+        <p class="text-muted q-mt-md">No hay productos en esta categoría.</p>
       </div>
     </div>
   </q-page>
@@ -445,18 +404,17 @@ useSeoMeta({
 pub fn page_producto_item() -> &'static str {
     r#"<script setup lang="ts">
 const route = useRoute()
-const { categoria, id } = route.params as { categoria: string; id: string }
-const { data: producto, pending } = await useApi(`/productos/${categoria}/${id}`)
+const categoria = computed(() => route.params.categoria as string)
+const id = computed(() => route.params.id as string)
+const { data: producto, pending } = await useApi<any>(() => `/productos/${categoria.value}/${id.value}`)
 
 useSeoMeta({
-  title: () => producto.value?.nombre || id,
+  title: () => producto.value?.nombre || id.value,
   description: () => producto.value?.descripcion || '',
-  ogTitle: () => producto.value?.nombre || id,
+  ogTitle: () => producto.value?.nombre || id.value,
   ogImage: () => producto.value?.imagen || '/oweelogo.png',
-  ogUrl: () => `/productos/${categoria}/${id}`,
 })
 
-// Schema.org Product para SEO máximo
 useHead({
   script: [{
     type: 'application/ld+json',
@@ -480,19 +438,13 @@ useHead({
 <template>
   <q-page class="oweeme-page q-pa-xl">
     <q-inner-loading :showing="pending" color="primary" />
-
     <div v-if="!pending && producto" class="row q-col-gutter-xl">
       <div class="col-12 col-md-6">
-        <q-img
-          :src="producto.imagen"
-          :alt="producto.nombre"
-          class="rounded-borders"
-          style="border-radius:16px;"
-        />
+        <q-img :src="producto.imagen" :alt="producto.nombre" style="border-radius:16px;" />
       </div>
       <div class="col-12 col-md-6 flex column q-gutter-md">
         <div class="flex items-center q-gutter-sm">
-          <q-btn flat icon="arrow_back" :to="`/productos/${categoria}`" color="primary" dense />
+          <q-btn flat icon="arrow_back" :to="'/productos/' + categoria" color="primary" dense />
           <q-chip :label="categoria" color="secondary" text-color="white" />
         </div>
         <h1 class="text-h4 text-cream q-ma-none">{{ producto.nombre }}</h1>
@@ -509,10 +461,10 @@ useHead({
 pub fn page_blog(cfg: &ProjectConfig) -> String {
     format!(
         r#"<script setup lang="ts">
-const {{ data: posts, pending }} = await useApi('/blog')
+const {{ data: posts, pending }} = await useApi<any[]>('/blog')
 
 useSeoMeta({{
-  title: `Blog | {name}`,
+  title: 'Blog | {name}',
   description: 'Artículos, noticias y recursos de {name}.',
   ogUrl: '{url}/blog',
 }})
@@ -526,9 +478,9 @@ useSeoMeta({{
       <div v-for="post in posts" :key="post.slug" class="col-12 col-md-6 col-lg-4">
         <BlogCard :post="post" />
       </div>
-      <div v-if="!posts?.length" class="col-12 text-center text-muted">
+      <div v-if="!posts?.length" class="col-12 text-center">
         <q-icon name="article" size="4rem" color="secondary" />
-        <p class="q-mt-md">No hay artículos aún. Conecta tu API.</p>
+        <p class="text-muted q-mt-md">No hay artículos aún. Conecta tu API.</p>
       </div>
     </div>
   </q-page>
@@ -543,16 +495,16 @@ pub fn page_blog_post(cfg: &ProjectConfig) -> String {
     format!(
         r#"<script setup lang="ts">
 const route = useRoute()
-const slug = route.params.slug as string
-const {{ data: post, pending }} = await useApi(`/blog/${{slug}}`)
+const slug = computed(() => route.params.slug as string)
+const {{ data: post, pending }} = await useApi<any>(() => '/blog/' + slug.value)
 
 useSeoMeta({{
-  title: () => `${{post.value?.titulo || slug}} | {name}`,
+  title: () => (post.value?.titulo || slug.value) + ' | {name}',
   description: () => post.value?.descripcion || '',
   ogTitle: () => post.value?.titulo,
   ogImage: () => post.value?.imagen || '/oweelogo.png',
   articlePublishedTime: () => post.value?.fecha,
-  ogUrl: () => `{url}/blog/${{slug}}`,
+  ogUrl: () => '{url}/blog/' + slug.value,
 }})
 
 useHead({{
@@ -578,7 +530,7 @@ useHead({{
       <q-btn flat icon="arrow_back" to="/blog" color="primary" class="q-mb-md" />
       <q-img v-if="post.imagen" :src="post.imagen" :alt="post.titulo"
              class="q-mb-xl" style="border-radius:16px;max-height:420px;" />
-      <h1 class="text-h4 text-cream">{{{{ post.titulo }}}}</h1>
+      <h1 class="text-h4 text-cream">{{ post.titulo }}</h1>
       <div class="flex items-center q-gutter-sm q-mb-lg">
         <q-chip :label="post.autor" icon="person" color="secondary" text-color="white" />
         <q-chip :label="post.fecha" icon="event" flat />
@@ -601,14 +553,14 @@ const sending = ref(false)
 const sent = ref(false)
 
 useSeoMeta({{
-  title: `Contacto | {name}`,
+  title: 'Contacto | {name}',
   description: 'Ponte en contacto con nosotros.',
   ogUrl: '{url}/contacto',
 }})
 
 async function enviar() {{
   sending.value = true
-  // Conecta con tu API aquí
+  // TODO: conecta con tu API aquí
   await new Promise(r => setTimeout(r, 1000))
   sent.value = true
   sending.value = false
@@ -666,34 +618,21 @@ const drawer = ref(false)
         <img src="/oweelogo.png" alt="{name}" style="height:36px;border-radius:50%;" />
         <span class="text-weight-bold text-cream" style="font-size:1.1rem;">{name}</span>
       </NuxtLink>
-
       <q-space />
-
-      <!-- Desktop nav -->
       <div class="gt-sm flex q-gutter-sm">
-        <q-btn
-          v-for="l in links" :key="l.to"
-          :to="l.to" flat :label="l.label"
-          class="text-cream"
-        />
+        <q-btn v-for="l in links" :key="l.to" :to="l.to" flat :label="l.label" class="text-cream" />
       </div>
-
-      <!-- Mobile hamburger -->
       <q-btn class="lt-md" flat round icon="menu" @click="drawer = !drawer" />
     </q-toolbar>
   </q-header>
 
-  <!-- Mobile drawer -->
   <q-drawer v-model="drawer" side="right" overlay class="oweeme-bg">
     <q-list>
-      <q-item
-        v-for="l in links" :key="l.to"
-        :to="l.to" clickable v-ripple @click="drawer = false"
-      >
+      <q-item v-for="l in links" :key="l.to" :to="l.to" clickable v-ripple @click="drawer = false">
         <q-item-section avatar>
           <q-icon :name="l.icon" color="primary" />
         </q-item-section>
-        <q-item-section class="text-cream">{{{{ l.label }}}}</q-item-section>
+        <q-item-section class="text-cream">{{ l.label }}</q-item-section>
       </q-item>
     </q-list>
   </q-drawer>
@@ -705,10 +644,14 @@ const drawer = ref(false)
 
 pub fn comp_footer(cfg: &ProjectConfig) -> String {
     format!(
-        r#"<template>
+        r#"<script setup lang="ts">
+const year = new Date().getFullYear()
+</script>
+
+<template>
   <q-footer class="oweeme-footer q-pa-lg text-center">
     <p class="text-muted q-ma-none text-caption">
-      © {{{{ new Date().getFullYear() }}}} {name} — Powered by
+      © {{ year }} {name} —
       <a href="https://github.com/oweeme/framework-oweeme" target="_blank" class="text-primary">
         Oweeme Framework
       </a>
@@ -725,7 +668,7 @@ pub fn comp_hero(cfg: &ProjectConfig) -> String {
         r#"<template>
   <section class="oweeme-hero flex flex-center column text-center q-pa-xl q-gutter-lg">
     <img src="/oweelogo.png" alt="{name}"
-         style="width:120px;border-radius:50%;box-shadow:0 0 48px #e8553a66;" />
+         style="width:120px;border-radius:50%;box-shadow:0 0 48px rgba(232,85,58,0.4);" />
     <h1 style="color:#f5e2a0;font-size:clamp(2rem,5vw,3.5rem);font-weight:800;margin:0;">
       {name}
     </h1>
@@ -746,19 +689,19 @@ pub fn comp_hero(cfg: &ProjectConfig) -> String {
 pub fn comp_product_card() -> &'static str {
     r#"<script setup lang="ts">
 defineProps<{
-  product: { id: string; nombre: string; precio: number; imagen?: string; descripcion?: string }
+  product: { id: string | number; nombre: string; precio: number; imagen?: string; descripcion?: string }
   categoria: string
 }>()
 </script>
 
 <template>
-  <NuxtLink :to="`/productos/${categoria}/${product.id}`" class="no-decoration">
+  <NuxtLink :to="'/productos/' + categoria + '/' + product.id" class="no-decoration">
     <q-card class="oweeme-card oweeme-card--hover cursor-pointer full-height">
       <q-img v-if="product.imagen" :src="product.imagen" :alt="product.nombre" height="180px" />
       <q-card-section>
         <h3 class="text-body1 text-cream q-ma-none">{{ product.nombre }}</h3>
         <p class="text-primary text-weight-bold q-mt-xs">${{ product.precio }}</p>
-        <p v-if="product.descripcion" class="text-muted text-caption text-ellipsis-2-lines">
+        <p v-if="product.descripcion" class="text-muted text-caption">
           {{ product.descripcion }}
         </p>
       </q-card-section>
@@ -776,14 +719,12 @@ defineProps<{
 </script>
 
 <template>
-  <NuxtLink :to="`/blog/${post.slug}`" class="no-decoration">
+  <NuxtLink :to="'/blog/' + post.slug" class="no-decoration">
     <q-card class="oweeme-card oweeme-card--hover cursor-pointer full-height">
       <q-img v-if="post.imagen" :src="post.imagen" :alt="post.titulo" height="180px" />
       <q-card-section class="q-gutter-sm">
         <h3 class="text-body1 text-cream q-ma-none">{{ post.titulo }}</h3>
-        <p v-if="post.descripcion" class="text-muted text-caption text-ellipsis-2-lines">
-          {{ post.descripcion }}
-        </p>
+        <p v-if="post.descripcion" class="text-muted text-caption">{{ post.descripcion }}</p>
         <div class="flex items-center q-gutter-xs text-caption text-muted">
           <q-icon name="person" size="xs" />
           <span>{{ post.autor }}</span>
@@ -801,15 +742,22 @@ defineProps<{
 
 pub fn composable_use_api(cfg: &ProjectConfig) -> String {
     format!(
-        r#"// Wrapper sobre $fetch de Nuxt con base URL automática desde .env
-export function useApi<T = unknown>(path: string, options?: Parameters<typeof useFetch>[1]) {{
-  const config = useRuntimeConfig()
-  const base   = config.public.apiBase || '{api}'
+        r#"// Wrapper sobre useFetch de Nuxt con base URL automática desde .env
+export function useApi<T = unknown>(
+  path: string | (() => string),
+  options?: Parameters<typeof useFetch>[1]
+) {{
+  const config  = useRuntimeConfig()
+  const apiBase = config.public.apiBase || '{api}'
 
-  return useFetch<T>(`${{base}}${{path}}`, {{
+  const url = typeof path === 'function'
+    ? computed(() => apiBase + path())
+    : apiBase + path
+
+  return useFetch<T>(url as any, {{
     ...options,
     onResponseError({{ response }}) {{
-      console.error(`[useApi] ${{path}} → ${{response.status}}`)
+      console.error('[useApi]', response.status, response.url)
     }},
   }})
 }}
@@ -819,7 +767,7 @@ export function useApi<T = unknown>(path: string, options?: Parameters<typeof us
 }
 
 pub fn composable_use_seo() -> &'static str {
-    r#"// Helper para generar SEO meta + schema.org de forma sencilla
+    r#"// Helper SEO con schema.org integrado
 interface SeoOptions {
   title: string
   description: string
@@ -830,7 +778,7 @@ interface SeoOptions {
 }
 
 export function useSeo(opts: SeoOptions) {
-  const config = useRuntimeConfig()
+  const config  = useRuntimeConfig()
   const siteUrl = config.public.siteUrl
 
   useSeoMeta({
@@ -839,8 +787,8 @@ export function useSeo(opts: SeoOptions) {
     ogTitle: opts.title,
     ogDescription: opts.description,
     ogImage: opts.image || '/oweelogo.png',
-    ogUrl: opts.url ? `${siteUrl}${opts.url}` : siteUrl,
-    ogType: opts.type || 'website',
+    ogUrl: opts.url ? siteUrl + opts.url : siteUrl,
+    ogType: (opts.type || 'website') as any,
     twitterCard: 'summary_large_image',
     twitterTitle: opts.title,
     twitterDescription: opts.description,
@@ -862,34 +810,27 @@ export function useSeo(opts: SeoOptions) {
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 
 pub fn nuxt_css() -> &'static str {
-    r#"/* Oweeme Framework — Design System (Koi palette) */
-
+    r#"/* Oweeme Framework — Design System (paleta Koi) */
 :root {
-  --oweeme-bg:       #0d3d2e;
-  --oweeme-surface:  #112e22;
-  --oweeme-teal:     #1a5c47;
-  --oweeme-coral:    #e8553a;
-  --oweeme-cream:    #f5e2a0;
-  --oweeme-mint:     #a8d5c2;
-  --oweeme-muted:    #5a9e80;
-  --oweeme-radius:   14px;
-  --oweeme-shadow:   0 4px 32px rgba(0,0,0,0.4);
+  --oweeme-bg:      #0d3d2e;
+  --oweeme-surface: #112e22;
+  --oweeme-teal:    #1a5c47;
+  --oweeme-coral:   #e8553a;
+  --oweeme-cream:   #f5e2a0;
+  --oweeme-mint:    #a8d5c2;
+  --oweeme-muted:   #5a9e80;
+  --oweeme-radius:  14px;
+  --oweeme-shadow:  0 4px 32px rgba(0,0,0,0.4);
 }
 
-/* Base */
-body {
-  background: var(--oweeme-bg);
-  font-family: 'Roboto', system-ui, sans-serif;
-}
+body { background: var(--oweeme-bg); font-family: 'Roboto', system-ui, sans-serif; }
 
-/* Layout helpers */
 .oweeme-page    { background: var(--oweeme-bg); min-height: 100vh; }
 .oweeme-bg      { background: var(--oweeme-surface) !important; }
 .oweeme-header  { background: var(--oweeme-teal) !important; }
 .oweeme-footer  { background: var(--oweeme-surface) !important; border-top: 1px solid rgba(232,85,58,0.15); }
-.oweeme-hero    { background: radial-gradient(ellipse at 50% 0%, #1a5c4780 0%, var(--oweeme-bg) 70%); min-height: 70vh; }
+.oweeme-hero    { background: radial-gradient(ellipse at 50% 0%, rgba(26,92,71,0.5) 0%, var(--oweeme-bg) 70%); min-height: 70vh; }
 
-/* Cards */
 .oweeme-card {
   background:    var(--oweeme-surface) !important;
   border:        1px solid rgba(232,85,58,0.12);
@@ -902,26 +843,16 @@ body {
   box-shadow: 0 8px 40px rgba(232,85,58,0.2);
 }
 
-/* Text helpers */
-.text-cream  { color: var(--oweeme-cream) !important; }
-.text-muted  { color: var(--oweeme-muted) !important; }
-.text-mint   { color: var(--oweeme-mint)  !important; }
-
-/* Links */
+.text-cream { color: var(--oweeme-cream) !important; }
+.text-muted { color: var(--oweeme-muted) !important; }
+.text-mint  { color: var(--oweeme-mint)  !important; }
 .no-decoration { text-decoration: none; color: inherit; }
 
-/* Prose (blog content) */
 .prose { line-height: 1.8; color: var(--oweeme-mint); }
 .prose h2 { color: var(--oweeme-cream); margin-top: 2rem; }
 .prose a  { color: var(--oweeme-coral); }
-.prose code {
-  background: var(--oweeme-teal);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.9em;
-}
+.prose code { background: var(--oweeme-teal); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
 
-/* Scrollbar */
 ::-webkit-scrollbar       { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--oweeme-bg); }
 ::-webkit-scrollbar-thumb { background: var(--oweeme-teal); border-radius: 3px; }
