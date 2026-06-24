@@ -975,8 +975,11 @@ pub fn vue_package_json(name: &str) -> String {
   }},
   "dependencies": {{
     "vue": "^3.4.0",
+    "vue-router": "^4.3.0",
+    "pinia": "^2.1.0",
     "quasar": "^2.16.0",
-    "@quasar/extras": "^1.16.0"
+    "@quasar/extras": "^1.16.0",
+    "axios": "^1.7.0"
   }},
   "devDependencies": {{
     "@vitejs/plugin-vue": "^5.0.0",
@@ -1032,9 +1035,18 @@ pub fn vue_index_html(site_name: &str) -> String {
 pub fn vue_main_js() -> &'static str {
     r#"import { createApp } from 'vue'
 import { Quasar } from 'quasar'
+import { createRouter, createWebHistory } from 'vue-router'
+import { createPinia } from 'pinia'
 import '@quasar/extras/material-icons/material-icons.css'
 import 'quasar/src/css/index.sass'
 import App from './App.vue'
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    { path: '/', component: App },
+  ]
+})
 
 const app = createApp(App)
 app.use(Quasar, {
@@ -1043,17 +1055,29 @@ app.use(Quasar, {
     brand: { primary: '#6c63ff', secondary: '#ff6584', accent: '#43e97b' }
   }
 })
+app.use(router)
+app.use(createPinia())
 app.mount('#app')
 "#
 }
 
 pub fn vue_app() -> &'static str {
     r#"<script setup>
-import { RouterView } from 'vue-router'
+import { ref } from 'vue'
+
+const count = ref(0)
 </script>
 
 <template>
-  <router-view />
+  <q-layout view="hHh lpR fFf">
+    <q-page-container>
+      <q-page class="flex flex-center column q-gutter-md">
+        <h1 class="text-h4 text-primary">Oweeme Framework</h1>
+        <p class="text-subtitle1">Vue 3 + Quasar + Rust SSR</p>
+        <q-btn color="primary" label="Clicks: {{ count }}" @click="count++" />
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>
 "#
 }
