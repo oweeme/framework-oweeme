@@ -30,7 +30,15 @@ pub fn info() {
     cmd("cargo run", "Start the dev server");
     println!();
     println!("{}", "Docs & source:".bright_black());
-    println!("  {}", "https://github.com/tu-usuario/framework-oweeme".cyan());
+    println!("  {}", "https://github.com/oweeme/framework-oweeme".cyan());
+    println!();
+    println!("{}", "Author:".bright_black());
+    println!(
+        "  {}  {}",
+        "Héctor Martínez".bold().white(),
+        "—".bright_black()
+    );
+    println!("  {}", "oweeme.com".cyan());
     println!();
 }
 
