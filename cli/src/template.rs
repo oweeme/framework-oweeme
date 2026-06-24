@@ -980,6 +980,7 @@ pub fn vue_package_json(name: &str) -> String {
   }},
   "devDependencies": {{
     "@vitejs/plugin-vue": "^5.0.0",
+    "@quasar/vite-plugin": "^1.7.0",
     "vite": "^5.0.0",
     "unplugin-vue-components": "^0.27.0"
   }}
