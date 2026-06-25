@@ -4,11 +4,29 @@ use crate::scaffold::ProjectConfig;
 
 pub fn package_json(cfg: &ProjectConfig) -> String {
     let name  = &cfg.name;
+    let lint_script = if cfg.with_linting() {
+        r#"    "lint":    "oxlint . && eslint .",
+    "format": "prettier --write src/","#
+    } else { "" };
     let build = if cfg.is_ts() { "vue-tsc && vite build" } else { "vite build" };
     let ts_deps = if cfg.is_ts() {
-        r#"    "typescript":          "5.7.3",
-    "vue-tsc":             "2.2.8","#
+        r#"    "typescript":                    "5.7.3",
+    "vue-tsc":                       "2.2.8","#
     } else { "" };
+    let lint_deps = if cfg.with_linting() {
+        let ts_lint = if cfg.is_ts() {
+            r#"    "typescript-eslint":             "8.18.0",
+    "@typescript-eslint/parser":     "8.18.0","#
+        } else { "" };
+        format!(r#"    "@eslint/js":                    "9.17.0",
+    "eslint":                        "9.17.0",
+    "eslint-plugin-vue":             "9.32.0",
+    "vue-eslint-parser":             "9.4.3",
+{ts_lint}
+    "oxlint":                        "0.14.0",
+    "prettier":                      "3.4.2","#)
+    } else { String::new() };
+
     format!(
         r#"{{
   "name": "{name}",
@@ -17,7 +35,7 @@ pub fn package_json(cfg: &ProjectConfig) -> String {
   "scripts": {{
     "dev":     "vite",
     "build":   "{build}",
-    "preview": "vite preview"
+    "preview": "vite preview"{lint_sep}{lint_script}
   }},
   "dependencies": {{
     "quasar":          "2.17.4",
@@ -34,10 +52,12 @@ pub fn package_json(cfg: &ProjectConfig) -> String {
 {ts_deps}
     "sass":                "1.77.6",
     "vite-plugin-pwa":     "0.20.5",
-    "workbox-window":      "7.3.0"
+    "workbox-window":      "7.3.0"{lint_sep2}{lint_deps}
   }}
 }}
-"#
+"#,
+        lint_sep  = if cfg.with_linting() { ",\n" } else { "" },
+        lint_sep2 = if cfg.with_linting() { ",\n" } else { "" },
     )
 }
 
@@ -197,6 +217,121 @@ export default api
     }
 }
 
+// ─── oweeme.config.ts / oweeme.config.js ─────────────────────────────────────
+
+pub fn oweeme_config(cfg: &ProjectConfig) -> String {
+    let icons: Vec<String> = cfg.icon_sets.iter()
+        .map(|i| format!("    '{}',", i.import().replace("import '", "").replace("'", "")))
+        .collect();
+    let plugins: Vec<String> = cfg.qplugins.iter()
+        .map(|p| format!("    '{}',", p.name()))
+        .collect();
+    let lang_str    = if cfg.is_ts() { "typescript" } else { "javascript" };
+    let linter_str  = if cfg.with_linting() { "eslint+oxlint" } else { "none" };
+    let pwa_str     = cfg.with_pwa.to_string();
+    let icons_str   = icons.join("\n");
+    let plugins_str = plugins.join("\n");
+    format!(r#"// oweeme.config — configuración del proyecto
+// Generado por Oweeme Framework CLI
+// Modifica este archivo y re-ejecuta `oweeme sync` para regenerar main.ts
+
+export default {{
+  lang:    '{lang_str}',
+  pwa:     {pwa_str},
+  linting: '{linter_str}',
+
+  // Icon sets activos — ver: https://quasar.dev/options/quasar-icon-sets
+  iconSets: [
+{icons_str}
+  ],
+
+  // Plugins Quasar activos — ver: https://quasar.dev/quasar-plugins
+  plugins: [
+{plugins_str}
+  ],
+}}
+"#)
+}
+
+// ─── ESLint 9 flat config ─────────────────────────────────────────────────────
+
+pub fn eslint_config(cfg: &ProjectConfig) -> String {
+    let ts_extra = if cfg.is_ts() {
+        r#"
+  // TypeScript
+  ...tseslint.configs.recommended,"#
+    } else { "" };
+    format!(r#"import js from '@eslint/js'
+import vue from 'eslint-plugin-vue'
+import vueParser from 'vue-eslint-parser'{ts_import}
+
+{ts_extra_import}export default [
+  js.configs.recommended,
+  ...vue.configs['flat/recommended'],{ts_extra}
+  {{
+    files: ['**/*.vue', '**/*.{ext}'],
+    languageOptions: {{
+      parser: vueParser,
+      {ts_parser}
+      globals: {{
+        window:    'readonly',
+        document:  'readonly',
+        console:   'readonly',
+        process:   'readonly',
+        __dirname: 'readonly',
+      }},
+    }},
+    rules: {{
+      'vue/multi-word-component-names': 'off',
+      'vue/no-unused-vars':             'error',
+      'vue/component-api-style':        ['error', ['script-setup']],
+      'no-console':                     ['warn', {{ allow: ['warn', 'error'] }}],
+      'no-unused-vars':                 'warn',
+    }},
+  }},
+  {{
+    ignores: ['dist/**', 'node_modules/**'],
+  }},
+]
+"#,
+        ext          = cfg.ext(),
+        ts_import    = if cfg.is_ts() { "\nimport tseslint from 'typescript-eslint'" } else { "" },
+        ts_extra_import = "",
+        ts_extra     = ts_extra,
+        ts_parser    = if cfg.is_ts() { "parserOptions: { parser: '@typescript-eslint/parser' }," } else { "" },
+    )
+}
+
+// ─── oxlint config ────────────────────────────────────────────────────────────
+
+pub fn oxlint_config() -> &'static str {
+    r#"{
+  "rules": {
+    "no-unused-vars":    "warn",
+    "no-console":        "warn",
+    "eqeqeq":           "error",
+    "no-var":           "error",
+    "prefer-const":     "error"
+  },
+  "ignore": ["dist", "node_modules"]
+}
+"#
+}
+
+// ─── .prettierrc ─────────────────────────────────────────────────────────────
+
+pub fn prettier_config() -> &'static str {
+    r#"{
+  "semi":         false,
+  "singleQuote":  true,
+  "tabWidth":     2,
+  "trailingComma":"es5",
+  "printWidth":   100,
+  "vueIndentScriptAndStyle": false
+}
+"#
+}
+
 // ─── public/.htaccess (Apache SPA routing) ────────────────────────────────────
 
 pub fn htaccess() -> &'static str {
@@ -235,24 +370,43 @@ pub fn index_html(cfg: &ProjectConfig) -> String {
 
 // ─── src/main.ts ──────────────────────────────────────────────────────────────
 
-pub fn main_ts(_cfg: &ProjectConfig) -> String {
-    r#"import { createApp } from 'vue'
-import { Quasar, Notify, Dialog, Loading } from 'quasar'
-import { createPinia } from 'pinia'
+pub fn main_ts(cfg: &ProjectConfig) -> String {
+    // Icon set imports
+    let icon_imports: String = cfg.icon_sets.iter()
+        .map(|i| i.import().to_string())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    // Plugin names for import and object
+    let plugin_names: Vec<&str> = cfg.qplugins.iter().map(|p| p.name()).collect();
+    let plugins_import = if plugin_names.is_empty() {
+        "Quasar".to_string()
+    } else {
+        format!("Quasar, {}", plugin_names.join(", "))
+    };
+    let plugins_obj = if plugin_names.is_empty() {
+        "{}".to_string()
+    } else {
+        format!("{{ {} }}", plugin_names.join(", "))
+    };
+
+    format!(r#"import {{ createApp }} from 'vue'
+import {{ {plugins_import} }} from 'quasar'
+import {{ createPinia }} from 'pinia'
 import router from './router'
 import App from './App.vue'
 
-import '@quasar/extras/material-icons/material-icons.css'
+{icon_imports}
 import 'quasar/dist/quasar.css'
 import './css/main.css'
 
 const app = createApp(App)
 
-app.use(Quasar, {
-  plugins: { Notify, Dialog, Loading },
-  config: {
+app.use(Quasar, {{
+  plugins: {plugins_obj},
+  config: {{
     dark: true,
-    brand: {
+    brand: {{
       primary:   '#e8553a',
       secondary: '#1a5c47',
       accent:    '#f5e2a0',
@@ -261,14 +415,14 @@ app.use(Quasar, {
       negative:  '#c93f26',
       info:      '#a8d5c2',
       warning:   '#f5c842',
-    },
-  },
-})
+    }},
+  }},
+}})
 
 app.use(createPinia())
 app.use(router)
 app.mount('#app')
-"#.to_string()
+"#)
 }
 
 // ─── src/App.vue ──────────────────────────────────────────────────────────────
