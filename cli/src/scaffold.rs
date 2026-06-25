@@ -4,76 +4,69 @@ use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{fs, path::Path, time::Duration};
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Lang { TypeScript, JavaScript }
+
 pub struct ProjectConfig {
-    pub name: String,
+    pub name:      String,
     pub site_name: String,
-    pub site_url: String,
-    pub api_url: String,
-    pub default_lang: String,
-    pub with_pwa: bool,
+    pub site_url:  String,
+    pub lang:      Lang,
+    pub with_pwa:  bool,
+}
+
+impl ProjectConfig {
+    pub fn is_ts(&self) -> bool { self.lang == Lang::TypeScript }
+    pub fn ext(&self) -> &'static str { if self.is_ts() { "ts" } else { "js" } }
 }
 
 pub fn run(name: &str) {
     let theme = ColorfulTheme::default();
 
-    println!("  {}", "Let's set up your Nuxt 3 + Quasar project".bold());
+    println!("  {}", "Configuremos tu proyecto Quasar SPA".bold());
     println!();
 
     let site_name: String = Input::with_theme(&theme)
-        .with_prompt("Site name")
+        .with_prompt("Nombre del sitio")
         .default(to_title(name))
         .interact_text()
         .unwrap();
 
     let site_url: String = Input::with_theme(&theme)
-        .with_prompt("Production URL")
+        .with_prompt("URL de producción")
         .default(format!("https://{name}.com"))
         .interact_text()
         .unwrap();
 
-    let api_url: String = Input::with_theme(&theme)
-        .with_prompt("API backend URL (REST)")
-        .default("http://localhost:8080/api".into())
-        .interact_text()
-        .unwrap();
-
-    let langs = &[
-        "es — Español", "en — English", "pt — Português",
-        "de — Deutsch", "fr — Français", "ru — Русский",
-        "ko — 한국어", "ja — 日本語",
-    ];
-    let lang_codes = &["es", "en", "pt", "de", "fr", "ru", "ko", "ja"];
     let lang_idx = Select::with_theme(&theme)
-        .with_prompt("Default language")
+        .with_prompt("Lenguaje")
+        .items(&["TypeScript  (recomendado — tipado, autocompletado)", "JavaScript  (sin tipos)"])
         .default(0)
-        .items(langs)
         .interact()
         .unwrap();
-    let default_lang = lang_codes[lang_idx].to_string();
+
+    let lang = if lang_idx == 0 { Lang::TypeScript } else { Lang::JavaScript };
 
     let with_pwa = Confirm::with_theme(&theme)
-        .with_prompt("Enable PWA (manifest + service worker)?")
+        .with_prompt("¿Habilitar PWA (manifest + service worker + offline)?")
         .default(true)
         .interact()
         .unwrap();
 
     println!();
 
-    let config = ProjectConfig {
-        name: name.to_string(),
-        site_name,
-        site_url,
-        api_url: api_url.clone(),
-        default_lang,
-        with_pwa,
-    };
-
+    let config = ProjectConfig { name: name.to_string(), site_name, site_url, lang, with_pwa };
     generate_project(&config);
-    print::done(name, &api_url);
+    print::done_new(name);
 }
 
 fn generate_project(cfg: &ProjectConfig) {
     let root = Path::new(&cfg.name);
+
+    if root.exists() {
+        eprintln!("{} El directorio '{}' ya existe.", "error:".red().bold(), cfg.name);
+        std::process::exit(1);
+    }
 
     let pb = ProgressBar::new_spinner();
     pb.set_style(
@@ -83,101 +76,106 @@ fn generate_project(cfg: &ProjectConfig) {
             .unwrap(),
     );
     pb.enable_steady_tick(Duration::from_millis(80));
+    pb.set_message("Creando estructura...");
 
-    pb.set_message("Creating project structure...");
     for dir in &[
-        "pages/productos/[categoria]",
-        "layouts",
-        "components",
-        "composables",
+        "src/pages",
+        "src/layouts",
+        "src/components",
+        "src/composables",
+        "src/boot",
+        "src/stores",
+        "src/router",
+        "src/css",
         "public",
-        "assets/css",
-        "locales",
-        "server/api",
     ] {
         fs::create_dir_all(root.join(dir)).unwrap();
     }
     pb.finish_and_clear();
 
-    let total = 6u8;
+    let total = 7u8;
+    let ext = cfg.ext();
 
-    // 1. Config
-    print::step(1, total, "Nuxt + Quasar config");
-    write(root, "package.json",       &template::nuxt_package_json(&cfg.name));
-    write(root, "nuxt.config.ts",     &template::nuxt_config(cfg));
-    write(root, "tsconfig.json",      template::tsconfig());
-    write(root, ".env.example",       &template::nuxt_env_example(cfg));
-    write(root, ".gitignore",         template::nuxt_gitignore());
-    print::ok("nuxt.config.ts + package.json");
-
-    // 2. App root
-    print::step(2, total, "App shell");
-    write(root, "app.vue",                        template::nuxt_app_vue());
-    write(root, "layouts/default.vue",            &template::nuxt_layout_default(cfg));
-    write(root, "error.vue",                      template::nuxt_error_vue());
-    print::ok("app.vue + layout + error page");
-
-    // 3. Pages (rutas automáticas)
-    print::step(3, total, "Pages + routing");
-    write(root, "pages/index.vue",                        &template::page_index(cfg));
-    write(root, "pages/servicios.vue",                    &template::page_servicios(cfg));
-    write(root, "pages/productos/index.vue",              &template::page_productos(cfg));
-    write(root, "pages/productos/[categoria]/index.vue",  template::page_categoria());
-    write(root, "pages/productos/[categoria]/[id].vue",   template::page_producto_item());
-    write(root, "pages/blog/index.vue",                   &template::page_blog(cfg));
-    write(root, "pages/blog/[slug].vue",                  &template::page_blog_post(cfg));
-    write(root, "pages/contacto.vue",                     &template::page_contacto(cfg));
-    print::ok("index / servicios / productos / blog / contacto");
-
-    // 4. Components
-    print::step(4, total, "Components");
-    write(root, "components/AppHeader.vue",    &template::comp_header(cfg));
-    write(root, "components/AppFooter.vue",    &template::comp_footer(cfg));
-    write(root, "components/ProductCard.vue",  template::comp_product_card());
-    write(root, "components/BlogCard.vue",     template::comp_blog_card());
-    write(root, "components/HeroSection.vue",  &template::comp_hero(cfg));
-    print::ok("Header / Footer / Hero / Cards");
-
-    // 5. Composables + i18n + CSS
-    print::step(5, total, "Composables + i18n + styles");
-    write(root, "composables/useApi.ts",       &template::composable_use_api(cfg));
-    write(root, "composables/useSeo.ts",       template::composable_use_seo());
-    write(root, "assets/css/main.css",         template::nuxt_css());
-    for (code, json) in template::all_locales() {
-        write(root, &format!("locales/{code}.json"), &json);
+    // 1. Config raíz
+    print::step(1, total, "Configuración del proyecto");
+    write(root, "index.html",   &template::index_html(cfg));
+    write(root, "package.json", &template::package_json(cfg));
+    write(root, &format!("vite.config.{ext}"), &template::vite_config(cfg));
+    write(root, ".env.example", &template::env_example(cfg));
+    write(root, ".gitignore",   template::gitignore());
+    if cfg.is_ts() {
+        write(root, "tsconfig.json", template::tsconfig());
+    } else {
+        write(root, "jsconfig.json", template::jsconfig());
     }
-    print::ok("useApi + useSeo + CSS + 8 locales");
+    print::ok(&format!("index.html + package.json + vite.config.{ext}"));
 
-    // 6. Logo
-    print::step(6, total, "Assets");
-    let logo_bytes: &[u8] = include_bytes!("../assets/oweelogo.png");
-    let logo_path = root.join("public/oweelogo.png");
-    fs::write(&logo_path, logo_bytes).unwrap_or_else(|e| {
-        eprintln!("{} writing logo: {e}", "error".red());
+    // 2. App shell
+    print::step(2, total, "App shell");
+    write(root, "src/App.vue",                    template::app_vue());
+    write(root, &format!("src/main.{ext}"),       &template::main_ts(cfg));
+    write(root, "src/css/main.css",               template::main_css());
+    write(root, "src/css/quasar.variables.scss",  template::quasar_variables());
+    print::ok(&format!("App.vue + main.{ext} + CSS"));
+
+    // 3. Boot — axios
+    print::step(3, total, "Boot — axios");
+    write(root, &format!("src/boot/axios.{ext}"), &template::boot_axios(cfg));
+    print::ok(&format!("src/boot/axios.{ext}"));
+
+    // 4. Router
+    print::step(4, total, "Router + rutas");
+    write(root, &format!("src/router/index.{ext}"),  &template::router_index(cfg));
+    write(root, &format!("src/router/routes.{ext}"), &template::router_routes(cfg));
+    print::ok("src/router/");
+
+    // 5. Páginas + layouts
+    print::step(5, total, "Páginas + layouts");
+    write(root, "src/layouts/MainLayout.vue",  &template::layout_main(cfg));
+    write(root, "src/pages/Index.vue",         &template::page_index(cfg));
+    write(root, "src/pages/ErrorNotFound.vue", template::page_error());
+    print::ok("layouts/ + pages/");
+
+    // 6. Componentes + composables + stores
+    print::step(6, total, "Componentes + composables + stores");
+    write(root, "src/components/AppHeader.vue",              &template::comp_header(cfg));
+    write(root, "src/components/AppFooter.vue",              &template::comp_footer(cfg));
+    write(root, "src/components/HeroSection.vue",            &template::comp_hero(cfg));
+    write(root, &format!("src/composables/useSeo.{ext}"),   &template::composable_use_seo(cfg));
+    write(root, &format!("src/stores/app.{ext}"),           &template::store_app(cfg));
+    print::ok("components/ + composables/ + stores/");
+
+    // 7. Assets públicos
+    print::step(7, total, "Assets públicos");
+    let logo: &[u8] = include_bytes!("../assets/oweelogo.png");
+    fs::write(root.join("public/oweelogo.png"), logo).unwrap_or_else(|e| {
+        eprintln!("{} logo: {e}", "error".red());
     });
+    write(root, "public/robots.txt",  &template::robots_txt(cfg));
+    write(root, "public/sitemap.xml", &template::sitemap_placeholder(cfg));
+    write(root, "public/.htaccess",   template::htaccess());
     if cfg.with_pwa {
         write(root, "public/manifest.json", &template::pwa_manifest(cfg));
     }
-    print::ok("logo + assets");
+    print::ok("public/ — logo + robots.txt + sitemap.xml + .htaccess");
 }
 
 fn write(root: &Path, relative: &str, content: impl AsRef<str>) {
-    let content = content.as_ref();
     let path = root.join(relative);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).unwrap();
     }
-    fs::write(&path, content).unwrap_or_else(|e| {
-        eprintln!("{} writing {}: {e}", "error".red(), path.display());
+    fs::write(&path, content.as_ref()).unwrap_or_else(|e| {
+        eprintln!("{} escribiendo {}: {e}", "error".red(), path.display());
     });
 }
 
-fn to_title(s: &str) -> String {
+pub fn to_title(s: &str) -> String {
     s.split(['-', '_'])
         .map(|w| {
             let mut c = w.chars();
             match c.next() {
-                None => String::new(),
+                None    => String::new(),
                 Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
             }
         })
