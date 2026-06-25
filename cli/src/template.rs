@@ -352,6 +352,7 @@ pub fn htaccess() -> &'static str {
 // ─── index.html ───────────────────────────────────────────────────────────────
 
 pub fn index_html(cfg: &ProjectConfig) -> String {
+    let ext = cfg.ext();
     format!(
         r#"<!DOCTYPE html>
 <html lang="es">
@@ -363,11 +364,12 @@ pub fn index_html(cfg: &ProjectConfig) -> String {
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/main.{ext}"></script>
   </body>
 </html>
 "#,
-        site_name = cfg.site_name
+        site_name = cfg.site_name,
+        ext = ext,
     )
 }
 
@@ -408,7 +410,7 @@ const app = createApp(App)
 app.use(Quasar, {{
   plugins: {plugins_obj},
   config: {{
-    dark: true,
+    dark: 'auto',
     brand: {{
       primary:   '#e8553a',
       secondary: '#1a5c47',
@@ -518,6 +520,34 @@ body { background: var(--oweeme-bg); font-family: 'Roboto', system-ui, sans-seri
 ::-webkit-scrollbar       { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--oweeme-bg); }
 ::-webkit-scrollbar-thumb { background: var(--oweeme-teal); border-radius: 3px; }
+
+/* Footer links */
+.oweeme-footer-link {
+  text-decoration: none;
+  color: var(--oweeme-muted);
+  font-size: .85rem;
+  transition: color .15s;
+}
+.oweeme-footer-link:hover { color: var(--oweeme-coral); }
+
+/* ── Light mode (Quasar añade body--light / body--dark) ── */
+body.body--light {
+  --oweeme-bg:      #f4f1ea;
+  --oweeme-surface: #ffffff;
+  --oweeme-teal:    #d6efe8;
+  --oweeme-cream:   #1a2820;
+  --oweeme-muted:   #5a7a6b;
+  --oweeme-shadow:  0 4px 24px rgba(0,0,0,0.10);
+}
+body.body--light .oweeme-header {
+  background: rgba(244, 241, 234, 0.95) !important;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+body.body--light .oweeme-nav-link       { color: rgba(26,40,32,.75); }
+body.body--light .oweeme-nav-link:hover { background: rgba(0,0,0,.04); color: var(--oweeme-cream); }
+body.body--light .oweeme-card           { background: #ffffff !important; }
+body.body--light .oweeme-footer         { background: #e8e5de !important; }
+body.body--light ::-webkit-scrollbar-track { background: #f4f1ea; }
 "#
 }
 
@@ -595,12 +625,12 @@ export default routes
 pub fn layout_main(_cfg: &ProjectConfig) -> String {
     format!(
         r#"<template>
-  <q-layout view="hHh lpR fFf">
+  <q-layout view="hHh lpR lff">
     <AppHeader />
     <q-page-container>
       <router-view />
+      <AppFooter />
     </q-page-container>
-    <AppFooter />
   </q-layout>
 </template>
 
@@ -691,18 +721,23 @@ const router = useRouter()
 pub fn comp_header(cfg: &ProjectConfig) -> String {
     format!(
         r#"<script setup lang="ts">
-import {{ ref }} from 'vue'
+import {{ ref, computed }} from 'vue'
 import {{ useRouter }} from 'vue-router'
+import {{ useQuasar }} from 'quasar'
 
 const router = useRouter()
+const $q     = useQuasar()
 const drawer = ref(false)
 
+const isDark    = computed(() => $q.dark.isActive)
+const themeIcon = computed(() => isDark.value ? 'light_mode' : 'dark_mode')
+function toggleDark() {{ $q.dark.toggle() }}
+
 const links = [
-  {{ label: 'Inicio',        to: '/' }},
-  {{ label: 'Nosotros',      to: '/nosotros' }},
-  {{ label: 'Servicios',     to: '/servicios' }},
-  {{ label: 'Productos',     to: '/productos' }},
-  {{ label: 'Contacto',      to: '/contacto' }},
+  {{ label: 'Inicio',    to: '/' }},
+  {{ label: 'Nosotros',  to: '/nosotros' }},
+  {{ label: 'Servicios', to: '/servicios' }},
+  {{ label: 'Contacto',  to: '/contacto' }},
 ]
 </script>
 
@@ -730,9 +765,13 @@ const links = [
 
       <q-space />
 
-      <!-- Acciones -->
+      <!-- Acciones desktop -->
       <div class="gt-sm flex items-center q-gutter-sm">
-        <q-btn flat round icon="light_mode" class="text-cream" size="sm" />
+        <q-btn
+          flat round :icon="themeIcon" size="sm"
+          class="text-cream" :title="isDark ? 'Modo claro' : 'Modo oscuro'"
+          @click="toggleDark"
+        />
         <q-btn
           unelevated color="primary" label="Ingresar"
           style="border-radius:8px; font-weight:600;"
@@ -741,14 +780,17 @@ const links = [
       </div>
 
       <!-- Mobile -->
-      <q-btn class="lt-md" flat round icon="menu" color="cream" @click="drawer = !drawer" />
+      <q-btn class="lt-md" flat round icon="menu" @click="drawer = !drawer" />
     </q-toolbar>
   </q-header>
 
   <q-drawer v-model="drawer" side="right" overlay class="oweeme-bg" style="max-width:260px;">
-    <div class="q-pa-md flex items-center q-gutter-sm" style="border-bottom:1px solid rgba(255,255,255,.08)">
-      <img src="/oweelogo.png" style="height:30px;border-radius:50%;" />
-      <span class="text-cream text-weight-bold">{name}</span>
+    <div class="q-pa-md flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,.08)">
+      <div class="flex items-center q-gutter-sm">
+        <img src="/oweelogo.png" style="height:30px;border-radius:50%;" />
+        <span class="text-cream text-weight-bold">{name}</span>
+      </div>
+      <q-btn flat round :icon="themeIcon" size="sm" class="text-cream" @click="toggleDark" />
     </div>
     <q-list class="q-pt-sm">
       <q-item
@@ -779,16 +821,40 @@ const year = new Date().getFullYear()
 </script>
 
 <template>
-  <q-footer class="oweeme-footer q-pa-lg text-center">
-    <p class="text-muted q-ma-none text-caption">
-      © {{{{ year }}}} {name} —
-      <a
-        href="https://github.com/oweeme/framework-oweeme"
-        target="_blank" rel="noopener"
-        class="text-primary"
-      >Oweeme Framework</a>
-    </p>
-  </q-footer>
+  <footer class="oweeme-footer q-pa-xl text-center">
+    <div style="max-width:960px; margin:0 auto;">
+      <div class="row q-col-gutter-lg q-mb-lg text-left">
+        <div class="col-12 col-sm-4">
+          <p class="text-weight-bold text-cream q-mb-xs" style="font-size:.9rem;">{name}</p>
+          <p class="text-muted text-caption" style="line-height:1.7;">
+            Framework SPA construido con Quasar + Vue 3.<br/>
+            Listo para producción desde el primer día.
+          </p>
+        </div>
+        <div class="col-12 col-sm-4">
+          <p class="text-weight-bold text-cream q-mb-xs" style="font-size:.85rem;">Recursos</p>
+          <div class="flex column q-gutter-xs">
+            <a href="https://quasar.dev" target="_blank" rel="noopener" class="oweeme-footer-link">Quasar Docs</a>
+            <a href="https://vuejs.org" target="_blank" rel="noopener" class="oweeme-footer-link">Vue 3</a>
+            <a href="https://vitejs.dev" target="_blank" rel="noopener" class="oweeme-footer-link">Vite</a>
+          </div>
+        </div>
+        <div class="col-12 col-sm-4">
+          <p class="text-weight-bold text-cream q-mb-xs" style="font-size:.85rem;">Framework</p>
+          <div class="flex column q-gutter-xs">
+            <a href="https://github.com/oweeme/framework-oweeme" target="_blank" rel="noopener" class="oweeme-footer-link">GitHub</a>
+            <a href="https://oweeme.com" target="_blank" rel="noopener" class="oweeme-footer-link">oweeme.com</a>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.06); padding-top:1.25rem;">
+        <p class="text-muted q-ma-none text-caption">
+          © {{{{ year }}}} {name} — Powered by
+          <a href="https://github.com/oweeme/framework-oweeme" target="_blank" rel="noopener" class="text-primary">Oweeme Framework</a>
+        </p>
+      </div>
+    </div>
+  </footer>
 </template>
 "#,
         name = cfg.site_name,
