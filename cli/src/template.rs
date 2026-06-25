@@ -4,27 +4,32 @@ use crate::scaffold::ProjectConfig;
 
 pub fn package_json(cfg: &ProjectConfig) -> String {
     let name  = &cfg.name;
-    let lint_script = if cfg.with_linting() {
-        r#"    "lint":    "oxlint . && eslint .",
-    "format": "prettier --write src/","#
+    // Scripts — sin coma colgante al final
+    let lint_scripts = if cfg.with_linting() {
+        r#",
+    "lint":    "oxlint . && eslint .",
+    "format":  "prettier --write src/""#
     } else { "" };
     let build = if cfg.is_ts() { "vue-tsc && vite build" } else { "vite build" };
+    // devDeps TS
     let ts_deps = if cfg.is_ts() {
         r#"    "typescript":                    "5.7.3",
     "vue-tsc":                       "2.2.8","#
     } else { "" };
+    // devDeps linting — sin coma colgante
     let lint_deps = if cfg.with_linting() {
         let ts_lint = if cfg.is_ts() {
-            r#"    "typescript-eslint":             "8.18.0",
-    "@typescript-eslint/parser":     "8.18.0","#
+            r#",
+    "typescript-eslint":             "8.18.0",
+    "@typescript-eslint/parser":     "8.18.0""#
         } else { "" };
-        format!(r#"    "@eslint/js":                    "9.17.0",
+        format!(r#",
+    "@eslint/js":                    "9.17.0",
     "eslint":                        "9.17.0",
     "eslint-plugin-vue":             "9.32.0",
     "vue-eslint-parser":             "9.4.3",
-{ts_lint}
     "oxlint":                        "0.14.0",
-    "prettier":                      "3.4.2","#)
+    "prettier":                      "3.4.2"{ts_lint}"#)
     } else { String::new() };
 
     format!(
@@ -35,7 +40,7 @@ pub fn package_json(cfg: &ProjectConfig) -> String {
   "scripts": {{
     "dev":     "vite",
     "build":   "{build}",
-    "preview": "vite preview"{lint_sep}{lint_script}
+    "preview": "vite preview"{lint_scripts}
   }},
   "dependencies": {{
     "quasar":          "2.17.4",
@@ -52,12 +57,10 @@ pub fn package_json(cfg: &ProjectConfig) -> String {
 {ts_deps}
     "sass":                "1.77.6",
     "vite-plugin-pwa":     "0.20.5",
-    "workbox-window":      "7.3.0"{lint_sep2}{lint_deps}
+    "workbox-window":      "7.3.0"{lint_deps}
   }}
 }}
 "#,
-        lint_sep  = if cfg.with_linting() { ",\n" } else { "" },
-        lint_sep2 = if cfg.with_linting() { ",\n" } else { "" },
     )
 }
 
